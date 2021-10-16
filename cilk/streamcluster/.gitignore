@@ -1,0 +1,4 @@
+*.txt
+sc_cilk
+sc_cpu
+sc_omp

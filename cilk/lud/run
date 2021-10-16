@@ -1,0 +1,2 @@
+# ./cilk/lud_cilk -n 4 -i ../../data/lud/512.dat 
+./cilk/lud_cilk -s 8000 
