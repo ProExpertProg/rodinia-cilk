@@ -469,18 +469,17 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		/* for(int x = 0; x < Nparticles; x++){ */
                 /*         sumWeights += weights[x]; */
 		/* } */
-		/* #pragma omp parallel for private(x) reduction(+:sumWeights) */
-		CILK_C_REDUCER_OPADD(sumWeights_r, double, 0.0);
-		CILK_C_REGISTER_REDUCER(sumWeights_r);
 		/* REDUCER_VIEW(sumWeights_r) = 0.0; */
-		/* double_r sumWeights_r = 0.0; */
+		/* CILK_C_REDUCER_OPADD(sumWeights_r, double, 0.0); */
+		/* CILK_C_REGISTER_REDUCER(sumWeights_r); */
+		double_r sumWeights_r = 0.0;
 		cilk_for(int x = 0; x < Nparticles; x++){
-                        REDUCER_VIEW(sumWeights_r) += weights[x];
-                        /* sumWeights_r += weights[x]; */
+                        /* REDUCER_VIEW(sumWeights_r) += weights[x]; */
+                        sumWeights_r += weights[x];
 		}
-		double sumWeights = REDUCER_VIEW(sumWeights_r);
-		CILK_C_UNREGISTER_REDUCER(sumWeights_r);
-		/* double sumWeights = sumWeights_r; */
+		/* double sumWeights = REDUCER_VIEW(sumWeights_r); */
+		/* CILK_C_UNREGISTER_REDUCER(sumWeights_r); */
+		double sumWeights = sumWeights_r;
 		long long sum_time = get_time();
 		printf("TIME TO SUM WEIGHTS TOOK: %f\n", elapsed_time(exponential, sum_time));
 		/* #pragma omp parallel for shared(sumWeights, weights) private(x) */
