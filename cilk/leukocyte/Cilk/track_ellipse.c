@@ -1,5 +1,14 @@
 #include "track_ellipse.h"
+#include <cilk/reducer_opadd.h>
 
+// Methods for long long summation reducer
+void plusll(void *key, void *l, void *r) {
+  *(long long*)l += *(long long*)r;
+}
+
+void zeroll(void *key, void *v) {
+  *(long long*)v = 0;
+}
 
 void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np, int Nf) {
 	/*
@@ -55,10 +64,15 @@ void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np,
 	
 	// Keep track of the total time spent on computing
 	//  the MGVF matrix and evolving the snakes
-	long long  MGVF_time = 0;
-	long long snake_time = 0;
-	
-	
+	/* long long  MGVF_time = 0; */
+	/* long long snake_time = 0; */
+	/* CILK_C_REDUCER_OPADD(MGVF_time_r, long, 0); */
+	/* CILK_C_REDUCER_OPADD(snake_time_r, long, 0); */
+	/* CILK_C_REGISTER_REDUCER(MGVF_time_r); */
+	/* CILK_C_REGISTER_REDUCER(snake_time_r); */
+	long long MGVF_time __attribute__((hyperobject, reducer(plusll, zeroll))) = 0;
+	long long snake_time __attribute__((hyperobject, reducer(plusll, zeroll))) = 0;
+
 	// Process each frame
 	int frame_num/* , cell_num */;
 	for (frame_num = 1; frame_num <= Nf; frame_num++) {	 
@@ -133,6 +147,7 @@ void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np,
 			long long MGVF_start_time = get_time();
 			MAT *IMGVF = MGVF(IE, 1, 1);
 			MGVF_time += get_time() - MGVF_start_time;
+			/* REDUCER_VIEW(MGVF_time_r) += get_time() - MGVF_start_time; */
 			
 			// Determine the position of the cell in the subimage			
 			xci = xci - (double) u1;
@@ -143,7 +158,8 @@ void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np,
 			long long snake_start_time = get_time();
 			ellipseevolve(IMGVF, &xci, &yci, ri, t, Np, (double) R, ycavg);
 			snake_time += get_time() - snake_start_time;
-			
+			/* REDUCER_VIEW(snake_time_r) += get_time() - snake_start_time; */
+
 			// Compute the cell's new position in the full image
 			xci = xci + u1;
 			yci = yci + (v1 - 1);
@@ -195,8 +211,12 @@ void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np,
 	// Report average processing time per frame
 	printf("\n\nTracking runtime (average per frame):\n");
 	printf("------------------------------------\n");
+	/* long long MGVF_time = REDUCER_VIEW(MGVF_time_r); */
+	/* long long snake_time = REDUCER_VIEW(snake_time_r); */
 	printf("MGVF computation: %.5f seconds\n", ((float) (MGVF_time)) / (float) (1000*1000*Nf));
 	printf(" Snake evolution: %.5f seconds\n", ((float) (snake_time)) / (float) (1000*1000*Nf));
+	/* CILK_C_UNREGISTER_REDUCER(MGVF_time_r); */
+	/* CILK_C_UNREGISTER_REDUCER(snake_time_r); */
 }
 
 

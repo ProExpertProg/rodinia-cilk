@@ -12,6 +12,17 @@
 /* #include <omp.h> */
 #include <cilk/cilk.h>
 #include <cilk/reducer_opadd.h>
+// Methods for float summation reducer
+void plusd(void *key, void *l, void *r) {
+  *(double*)l += *(double*)r;
+}
+
+void zerod(void *key, void *v) {
+  *(double*)v = 0;
+}
+
+typedef double double_r __attribute__((hyperobject, reducer(plusd, zerod)));
+
 #include <limits.h>
 #define PI 3.1415926535897932
 /**
@@ -353,15 +364,17 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 	int max_size = IszX*IszY*Nfr;
 	long long start = get_time();
 	//original particle centroid
-	double xe = roundDouble(IszY/2.0);
-	double ye = roundDouble(IszX/2.0);
-	CILK_C_REDUCER_OPADD(xe_r, double, 0.0);
-	CILK_C_REGISTER_REDUCER(xe_r);
-	CILK_C_REDUCER_OPADD(ye_r, double, 0.0);
-	CILK_C_REGISTER_REDUCER(ye_r);
+	/* double xe = roundDouble(IszY/2.0); */
+	/* double ye = roundDouble(IszX/2.0); */
+	double_r xe = roundDouble(IszY/2.0);
+	double_r ye = roundDouble(IszX/2.0);
+	/* CILK_C_REDUCER_OPADD(xe_r, double, 0.0); */
+	/* CILK_C_REGISTER_REDUCER(xe_r); */
+	/* CILK_C_REDUCER_OPADD(ye_r, double, 0.0); */
+	/* CILK_C_REGISTER_REDUCER(ye_r); */
 
-	CILK_C_REDUCER_OPADD(sumWeights_r, double, 0.0);
-	CILK_C_REGISTER_REDUCER(sumWeights_r);
+	/* CILK_C_REDUCER_OPADD(sumWeights_r, double, 0.0); */
+	/* CILK_C_REGISTER_REDUCER(sumWeights_r); */
 	
 	//expected object locations, compared to center
 	int radius = 5;
@@ -457,11 +470,17 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
                 /*         sumWeights += weights[x]; */
 		/* } */
 		/* #pragma omp parallel for private(x) reduction(+:sumWeights) */
-		REDUCER_VIEW(sumWeights_r) = 0.0;
+		CILK_C_REDUCER_OPADD(sumWeights_r, double, 0.0);
+		CILK_C_REGISTER_REDUCER(sumWeights_r);
+		/* REDUCER_VIEW(sumWeights_r) = 0.0; */
+		/* double_r sumWeights_r = 0.0; */
 		cilk_for(int x = 0; x < Nparticles; x++){
                         REDUCER_VIEW(sumWeights_r) += weights[x];
+                        /* sumWeights_r += weights[x]; */
 		}
 		double sumWeights = REDUCER_VIEW(sumWeights_r);
+		CILK_C_UNREGISTER_REDUCER(sumWeights_r);
+		/* double sumWeights = sumWeights_r; */
 		long long sum_time = get_time();
 		printf("TIME TO SUM WEIGHTS TOOK: %f\n", elapsed_time(exponential, sum_time));
 		/* #pragma omp parallel for shared(sumWeights, weights) private(x) */
@@ -476,16 +495,20 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
                 /*         xe += arrayX[x] * weights[x]; */
                 /*         ye += arrayY[x] * weights[x]; */
 		/* } */
-		REDUCER_VIEW(xe_r) = 0;
-		REDUCER_VIEW(ye_r) = 0;
+		/* REDUCER_VIEW(xe_r) = 0; */
+		/* REDUCER_VIEW(ye_r) = 0; */
+		xe = 0;
+		ye = 0;
 		// estimate the object location by expected values
 		/* #pragma omp parallel for private(x) reduction(+:xe, ye) */
 		cilk_for(int x = 0; x < Nparticles; x++){
-                        REDUCER_VIEW(xe_r) += arrayX[x] * weights[x];
-                        REDUCER_VIEW(ye_r) += arrayY[x] * weights[x];
+                        /* REDUCER_VIEW(xe_r) += arrayX[x] * weights[x]; */
+                        /* REDUCER_VIEW(ye_r) += arrayY[x] * weights[x]; */
+                        xe += arrayX[x] * weights[x];
+                        ye += arrayY[x] * weights[x];
 		}
-		xe = REDUCER_VIEW(xe_r);
-		ye = REDUCER_VIEW(ye_r);
+		/* xe = REDUCER_VIEW(xe_r); */
+		/* ye = REDUCER_VIEW(ye_r); */
 		long long move_time = get_time();
 		printf("TIME TO MOVE OBJECT TOOK: %f\n", elapsed_time(normalize, move_time));
 		printf("XE: %lf\n", xe);
@@ -536,9 +559,9 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		long long reset = get_time();
 		printf("TIME TO RESET WEIGHTS TOOK: %f\n", elapsed_time(xyj_time, reset));
 	}
-	CILK_C_UNREGISTER_REDUCER(sumWeights_r);
-	CILK_C_UNREGISTER_REDUCER(ye_r);
-	CILK_C_UNREGISTER_REDUCER(xe_r);
+	/* CILK_C_UNREGISTER_REDUCER(sumWeights_r); */
+	/* CILK_C_UNREGISTER_REDUCER(ye_r); */
+	/* CILK_C_UNREGISTER_REDUCER(xe_r); */
 	free(disk);
 	free(objxy);
 	free(weights);

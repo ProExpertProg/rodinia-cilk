@@ -68,6 +68,15 @@
 #include <cilk/cilk.h>
 #include <cilk/reducer_opadd.h>
 
+// Methods for float summation reducer
+void plusf(void *key, void *l, void *r) {
+  *(float*)l += *(float*)r;
+}
+
+void zerof(void *key, void *v) {
+  *(float*)v = 0;
+}
+
 #define RANDOM_MAX 2147483647
 
 #ifndef FLT_MAX
@@ -128,8 +137,9 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 	float  **new_centers;				/* [nclusters][nfeatures] */
 	float  **clusters;					/* out: [nclusters][nfeatures] */
     /* float    delta; */
-    CILK_C_REDUCER_OPADD(delta, float, 0.0);
-    CILK_C_REGISTER_REDUCER(delta);
+    /* CILK_C_REDUCER_OPADD(delta, float, 0.0); */
+    /* CILK_C_REGISTER_REDUCER(delta); */
+	float delta __attribute__((hyperobject, reducer(plusf, zerof)));
         
     double   timing;
 
@@ -182,7 +192,8 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 	}
 	printf("num of blocks = %d\n", nblocks);
     do {
-        REDUCER_VIEW(delta) = 0.0;
+        /* REDUCER_VIEW(delta) = 0.0; */
+      delta = 0.0;
 		/* omp_set_num_threads(num_omp_threads); */
 		/* #pragma omp parallel \ */
                 /* shared(feature,clusters,membership,partial_new_centers,partial_new_centers_len) */
@@ -204,7 +215,8 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 		             clusters,
 		             nclusters);				
 	        /* if membership changes, increase delta by 1 */
-	        if (membership[i] != index) REDUCER_VIEW(delta) += 1.0;
+	        /* if (membership[i] != index) REDUCER_VIEW(delta) += 1.0; */
+	        if (membership[i] != index) delta += 1.0;
 
 	        /* assign the membership to object i */
 	        membership[i] = index;
@@ -239,8 +251,9 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 			new_centers_len[i] = 0;   /* set back to 0 */
 		}
         
-    } while (REDUCER_VIEW(delta) > threshold && loop++ < 500);
-    CILK_C_UNREGISTER_REDUCER(delta);
+    } while (delta > threshold && loop++ < 500);
+    /* } while (REDUCER_VIEW(delta) > threshold && loop++ < 500); */
+    /* CILK_C_UNREGISTER_REDUCER(delta); */
     
     free(new_centers[0]);
     free(new_centers);
