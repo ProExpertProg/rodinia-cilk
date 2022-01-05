@@ -4,8 +4,11 @@
 CC = clang
 CC_FLAGS = -g -fopencilk -O2 $(EXTRA_CFLAGS)
 
-kmeans: cluster.o getopt.o kmeans.o kmeans_clustering.o 
+kmeans: cluster.o getopt.o kmeans.o kmeans_clustering.o
 	$(CC) $(CC_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering.o  -o kmeans
+
+kmeans_reducers: cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o
+	$(CC) $(CC_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o  -o kmeans_reducers
 
 %.o: %.[ch]
 	$(CC) $(CC_FLAGS) $< -c
@@ -22,5 +25,8 @@ kmeans.o: kmeans.c
 kmeans_clustering.o: kmeans_clustering.c kmeans.h
 	$(CC) $(CC_FLAGS) kmeans_clustering.c -c
 
+kmeans_clustering_reducers.o: kmeans_clustering_reducers.c kmeans.h
+	$(CC) $(CC_FLAGS) kmeans_clustering_reducers.c -c
+
 clean:
-	rm -f *.o *~ kmeans 
+	rm -f *.o *~ kmeans kmeans_reducers
