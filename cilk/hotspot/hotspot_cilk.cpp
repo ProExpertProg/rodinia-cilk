@@ -140,7 +140,8 @@ void single_iteration(FLOAT *result, FLOAT *temp, FLOAT *power, int row, int col
         }
 
         for (int r = r_start; r < r_start + BLOCK_SIZE_R; ++r ) {
-// #pragma omp simd
+#pragma omp simd
+// #pragma clang loop vectorize(enable) interleave(enable)
             for (int c = c_start; c < c_start + BLOCK_SIZE_C; ++c ) {
             /* Update Temperatures */
                 result[r*col+c] =temp[r*col+c]+ 
@@ -319,7 +320,7 @@ int main(int argc, char **argv)
     printf("Ending simulation\n");
     printf("Total time: %.3f seconds\n", ((float) (end_time - start_time)) / (1000*1000));
 
-    writeoutput((1&sim_time) ? result : temp, grid_rows, grid_cols, ofile);
+    // writeoutput((1&sim_time) ? result : temp, grid_rows, grid_cols, ofile);
 
 	/* output results	*/
 #ifdef VERBOSE

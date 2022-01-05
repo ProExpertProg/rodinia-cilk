@@ -92,7 +92,7 @@ void  kernel_cpu(	par_str par,
 	//	MCPU SETUP
 	//======================================================================================================================================================150
 
-	omp_set_num_threads(dim.cores_arg);
+	/* omp_set_num_threads(dim.cores_arg); */
 
 	time2 = get_time();
 

@@ -4,11 +4,12 @@ override OUTPUT = -DOUTPUT
 endif
 
 CC = clang
-CFLAGS = -O3 -fopencilk $(EXTRA_CFLAGS)
+CILKFLAG = -fopencilk
+CFLAGS = -O3 $(CILKFLAG) $(EXTRA_CFLAGS)
 
 # link objects(binaries) together
 heartwall: main.o ./AVI/avilib.o ./AVI/avimod.o
-	$(CC) main.o ./AVI/avilib.o ./AVI/avimod.o -lm $(CFLAGS) -o heartwall
+	$(CC) main.o ./AVI/avilib.o ./AVI/avimod.o -lm $(CFLAGS) $(EXTRA_LDFLAGS) -o heartwall
 
 # compile main function file into object (binary)
 main.o: main.c define.c kernel.c

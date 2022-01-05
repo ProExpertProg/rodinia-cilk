@@ -111,6 +111,12 @@ create_matrix_from_random(float **mp, int size){
   }
 
   m = (float*)malloc(size*size*sizeof(float));
+  if ( m == NULL) {
+      free(l);
+      free(u);
+      return RET_FAILURE;
+  }
+
   for (i=0; i < size; i++) {
       for (j=0; j < size; j++) {
           for (k=0; k <= MIN(i,j); k++)

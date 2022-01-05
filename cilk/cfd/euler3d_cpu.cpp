@@ -15,7 +15,7 @@
 
 // #include <omp.h>
 #include <cilk/cilk.h>
-#include <cilk/cilkscale.h>
+// #include <cilk/cilkscale.h>
 
 struct float3 { float x, y, z; };
 
@@ -117,7 +117,7 @@ void dump(float* variables, int nel, int nelr)
 
 }
 
-void initialize_variables(int nelr, float* __restrict__ variables, float* __restrict__ ff_variable)
+void initialize_variables(int nelr, float* variables, float* ff_variable)
 {
 	// #pragma omp parallel for default(shared) schedule(static)
 	cilk_for(int i = 0; i < nelr; i++)
@@ -172,15 +172,15 @@ inline float compute_speed_of_sound(float& density, float& pressure)
 }
 
 
-void compute_step_factor(int nelr, float* __restrict variables, float* __restrict areas, float* __restrict step_factors)
+void compute_step_factor(int nelr, float* __restrict variables, float* areas, float* __restrict step_factors)
 {
 	// #pragma omp parallel for default(shared) schedule(auto)
         cilk_for(int blk = 0; blk < nelr/block_length; ++blk)
         {
             int b_start = blk*block_length;
             int b_end = (blk+1)*block_length > nelr ? nelr : (blk+1)*block_length;
-// #pragma omp simd
-#pragma clang loop vectorize(enable) interleave(enable)
+#pragma omp simd
+// #pragma clang loop vectorize(enable) interleave(enable)
 	for(int i = b_start; i < b_end; i++)
 	{
 		float density = variables[i + VAR_DENSITY*nelr];
@@ -208,7 +208,7 @@ void compute_step_factor(int nelr, float* __restrict variables, float* __restric
  *
 */
 
-void compute_flux(int nelr, int* __restrict elements_surrounding_elements, float* __restrict normals, float* __restrict variables, float* __restrict fluxes, float* __restrict ff_variable, float3 ff_flux_contribution_momentum_x, float3 ff_flux_contribution_momentum_y, float3 ff_flux_contribution_momentum_z, float3 ff_flux_contribution_density_energy)
+void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, float* variables, float* fluxes, float* ff_variable, float3 ff_flux_contribution_momentum_x, float3 ff_flux_contribution_momentum_y, float3 ff_flux_contribution_momentum_z, float3 ff_flux_contribution_density_energy)
 {
 	const float smoothing_coefficient = float(0.2f);
 
@@ -217,7 +217,7 @@ void compute_flux(int nelr, int* __restrict elements_surrounding_elements, float
         {
             int b_start = blk*block_length;
             int b_end = (blk+1)*block_length > nelr ? nelr : (blk+1)*block_length;
-// #pragma omp simd
+#pragma omp simd
 	for(int i = b_start; i < b_end; ++i)
 	{
                 float density_i = variables[i + VAR_DENSITY*nelr];
@@ -346,15 +346,15 @@ void compute_flux(int nelr, int* __restrict elements_surrounding_elements, float
         }
 }
 
-void time_step(int j, int nelr, float* __restrict old_variables, float*  __restrict variables, float*  __restrict step_factors, float* __restrict fluxes)
+void time_step(int j, int nelr, float* old_variables, float* variables, float*  step_factors, float* fluxes)
 {
     // #pragma omp parallel for  default(shared) schedule(auto)
     cilk_for(int blk = 0; blk < nelr/block_length; ++blk)
     {
         int b_start = blk*block_length;
         int b_end = (blk+1)*block_length > nelr ? nelr : (blk+1)*block_length;
-        // #pragma omp simd
-#pragma clang loop vectorize(enable) interleave(enable)
+#pragma omp simd
+// #pragma clang loop vectorize(enable) interleave(enable)
         for(int i = b_start; i < b_end; ++i)
         {
             float factor = step_factors[i]/float(RK+1-j);

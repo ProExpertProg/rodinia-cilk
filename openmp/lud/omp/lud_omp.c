@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <omp.h>
 
-extern int omp_num_threads;
+/* extern int omp_num_threads; */
 
 #define BS 16
 
@@ -53,7 +53,7 @@ void lud_omp(float *a, int size)
     omp_set_num_threads(224);
 #else
     printf("running OMP on host\n");
-    omp_set_num_threads(omp_num_threads);
+    /* omp_set_num_threads(omp_num_threads); */
 #endif
     for (offset = 0; offset < size - BS ; offset += BS)
     {

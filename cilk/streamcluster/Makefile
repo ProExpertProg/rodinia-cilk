@@ -11,7 +11,7 @@ ifdef version
 endif
 
 CXX = clang++
-CXXFLAGS = -O3 -fopencilk
+CXXFLAGS = -O3 -fopencilk $(EXTRA_CFLAGS)
 
 all: cpu cilk
 
@@ -19,7 +19,7 @@ cpu:
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) streamcluster_original.cpp -o $(TARGET_C) $(LIBS) -DENABLE_THREADS -pthread
 
 cilk:
-	$(CXX) $(CXXFLAGS) -o $(TARGET_O) streamcluster_cilk.cpp
+	$(CXX) $(CXXFLAGS) -o $(TARGET_O) streamcluster_cilk.cpp $(EXTRA_LDFLAGS)
 
 omp:
 	$(CXX) -O3 -fopenmp -o sc_omp streamcluster_omp.cpp

@@ -73,7 +73,7 @@
 #endif
 
 extern double wtime(void);
-extern int num_omp_threads;
+/* extern int num_omp_threads; */
 
 int find_nearest_point(float  *pt,          /* [nfeatures] */
                        int     nfeatures,
@@ -133,7 +133,8 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
     int    **partial_new_centers_len;
     float ***partial_new_centers;
 
-    nthreads = num_omp_threads; 
+    /* nthreads = num_omp_threads;  */
+    nthreads = atoi(getenv("OMP_NUM_THREADS"));
 
     /* allocate space for returning variable clusters[] */
     clusters    = (float**) malloc(nclusters *             sizeof(float*));
@@ -176,10 +177,10 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
         for (j=0; j<nclusters; j++)
             partial_new_centers[i][j] = (float*)calloc(nfeatures, sizeof(float));
 	}
-	printf("num of threads = %d\n", num_omp_threads);
+	printf("num of threads = %d\n", nthreads);
     do {
         delta = 0.0;
-		omp_set_num_threads(num_omp_threads);
+		/* omp_set_num_threads(num_omp_threads); */
 		#pragma omp parallel \
                 shared(feature,clusters,membership,partial_new_centers,partial_new_centers_len)
         {

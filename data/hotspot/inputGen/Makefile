@@ -1,12 +1,13 @@
-FLAGS := -Wno-write-strings
+CXX = g++
+FLAGS := -O3 -Wno-write-strings
 
 all: hotspotex hotspotver
 
 hotspotex: hotspotex.cpp
-	g++ $(FLAGS) -o $@ $<
+	$(CXX) $(FLAGS) -o $@ $<
 
 hotspotver: hotspotver.cpp
-	g++ $(FLAGS) -o $@ $<
+	$(CXX) $(FLAGS) -o $@ $<
 
 clean:
 	rm hotspotex hotspotver

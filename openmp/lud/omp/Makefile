@@ -15,13 +15,13 @@ EXECUTABLE      := lud_omp
 SOURCES         := lud.c lud_omp.c ../common/common.c 
 
 # ------------  compiler  ------------------------------------------------------
-CC              := gcc
-CXX             := g++
+CC              = gcc
+CXX             = g++
 
 # ------------  compiler flags  ------------------------------------------------
 DEBUG_CFLAGS    := -Wall -O0 -g
 RELEASE_CFLAGS  := -Wall -O3 
-COMMON_CFLAGS   := -fopenmp
+COMMON_CFLAGS   := -fopenmp $(EXTRA_CFLAGS)
 
 # ------------  compiler defs  ------------------------------------------------
 DEBUG_CDEFS    := 
@@ -31,7 +31,7 @@ COMMON_CDEFS   :=
 # ------------  linker flags  --------------------------------------------------
 DEBUG_LDFLAGS    := -g
 RELEASE_LDFLAGS  := 
-COMMON_LDFLAGS   := -fopenmp 
+COMMON_LDFLAGS   := -fopenmp $(EXTRA_LDFLAGS)
 
 ifeq (YES, ${DEBUG})
   CFLAGS       := ${DEBUG_CFLAGS} ${DEBUG_CDEFS}

@@ -55,8 +55,10 @@ void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np,
 	
 	// Keep track of the total time spent on computing
 	//  the MGVF matrix and evolving the snakes
-	long long  MGVF_time = 0;
-	long long snake_time = 0;
+	/* long long  MGVF_time = 0; */
+	/* long long snake_time = 0; */
+	long  MGVF_time = 0;
+	long snake_time = 0;
 	
 	
 	// Process each frame
@@ -81,7 +83,7 @@ void ellipsetrack(avi_t *video, double *xc0, double *yc0, int Nc, int R, int Np,
 		
 		// Split the work among multiple threads, if OPEN is defined
 		#ifdef OPEN
-		#pragma omp parallel for num_threads(omp_num_threads) private(i, j)
+#pragma omp parallel for /*num_threads(omp_num_threads)*/ private(i, j), reduction(+:MGVF_time,snake_time)
 		#endif
 		// Track each cell
 		for (cell_num = 0; cell_num < Nc; cell_num++) {

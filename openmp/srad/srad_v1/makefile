@@ -9,14 +9,14 @@
 
 # link objects(binaries) together
 a.out:	main.o
-	gcc	main.o \
+	$(CC)	main.o \
 			-lm -fopenmp -o srad
 
 # compile main function file into object (binary)
 main.o: 	main.c \
 				define.c \
 				graphics.c
-	gcc	main.c \
+	$(CC)	main.c \
 			-c -O3 -fopenmp
 
 # delete all object files

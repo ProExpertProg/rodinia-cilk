@@ -1,2 +1,2 @@
 ./kmeans_serial/kmeans -i ../../data/kmeans/kdd_cup 
-./kmeans_cilk/kmeans -n 4 -i ../../data/kmeans/kdd_cup 
+./kmeans_cilk/kmeans -n 1024 -i ../../data/kmeans/kdd_cup

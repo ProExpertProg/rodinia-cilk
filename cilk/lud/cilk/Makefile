@@ -19,9 +19,10 @@ CC              = clang
 CXX             = clang++
 
 # ------------  compiler flags  ------------------------------------------------
+CILKFLAG        = -fopencilk
 DEBUG_CFLAGS    := -Wall -O0 -g
 RELEASE_CFLAGS  := -Wall -O3 
-COMMON_CFLAGS   := -fopencilk $(EXTRA_CFLAGS)
+COMMON_CFLAGS   := $(CILKFLAG) $(EXTRA_CFLAGS)
 
 # ------------  compiler defs  ------------------------------------------------
 DEBUG_CDEFS    := 
@@ -31,7 +32,7 @@ COMMON_CDEFS   :=
 # ------------  linker flags  --------------------------------------------------
 DEBUG_LDFLAGS    := -g
 RELEASE_LDFLAGS  := 
-COMMON_LDFLAGS   := -fopencilk $(EXTRA_LDFLAGS)
+COMMON_LDFLAGS   := $(CILKFLAG) $(EXTRA_LDFLAGS)
 
 ifeq (YES, ${DEBUG})
   CFLAGS       := ${DEBUG_CFLAGS} ${DEBUG_CDEFS}
@@ -91,9 +92,9 @@ OBJECTS         = $(addsuffix .o,$(BASENAMES))
 # ------------  make the executable (the default goal)  ------------------------
 $(EXECUTABLE):	$(OBJECTS)
 ifeq ($(strip $(CPP_SOURCES)),)
-	$(CC)  $(ALL_LFLAGS) -o $(EXECUTABLE) $(OBJECTS) $(LOCAL_LIBSS) $(GLOBAL_LIBSS) $(SYS_LIBS)
+	$(CC)  $(ALL_LFLAGS) -o $(EXECUTABLE) $(OBJECTS) $(LOCAL_LIBSS) $(GLOBAL_LIBSS) $(SYS_LIBS) $(EXTRA_LDFLAGS)
 else
-	$(CXX) $(ALL_LFLAGS) -o $(EXECUTABLE) $(OBJECTS) $(LOCAL_LIBSS) $(GLOBAL_LIBSS) $(SYS_LIBS)
+	$(CXX) $(ALL_LFLAGS) -o $(EXECUTABLE) $(OBJECTS) $(LOCAL_LIBSS) $(GLOBAL_LIBSS) $(SYS_LIBS) $(EXTRA_LDFLAGS)
 endif
 
 # ------------  make the objects  ----------------------------------------------

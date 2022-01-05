@@ -9,7 +9,9 @@ extern void exit();
 
 int layer_size = 0;
 
-backprop_face()
+extern void load(BPNN *net);
+
+void backprop_face()
 {
   BPNN *net;
   int i;

@@ -4,3 +4,7 @@
 *.a
 *.ll
 *.bc
+*.log
+*.out
+*.csv
+**/perf.data

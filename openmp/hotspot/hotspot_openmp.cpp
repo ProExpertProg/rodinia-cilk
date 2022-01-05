@@ -63,9 +63,9 @@ void single_iteration(FLOAT *result, FLOAT *temp, FLOAT *power, int row, int col
     int chunks_in_col = row/BLOCK_SIZE_R;
 
 #ifdef OPEN
-    #ifndef __MIC__
-	omp_set_num_threads(num_omp_threads);
-    #endif
+    // #ifndef __MIC__
+    // 	omp_set_num_threads(num_omp_threads);
+    // #endif
     #pragma omp parallel for shared(power, temp, result) private(chunk, r, c, delta) firstprivate(row, col, num_chunk, chunks_in_row) schedule(static)
 #endif
     for ( chunk = 0; chunk < num_chunk; ++chunk )
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
     printf("Ending simulation\n");
     printf("Total time: %.3f seconds\n", ((float) (end_time - start_time)) / (1000*1000));
 
-    writeoutput((1&sim_time) ? result : temp, grid_rows, grid_cols, ofile);
+    // writeoutput((1&sim_time) ? result : temp, grid_rows, grid_cols, ofile);
 
 	/* output results	*/
 #ifdef VERBOSE

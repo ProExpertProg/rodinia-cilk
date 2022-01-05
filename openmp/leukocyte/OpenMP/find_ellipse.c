@@ -110,7 +110,7 @@ MAT * ellipsematching(MAT * grad_x, MAT * grad_y) {
 	
 	// Split the work among multiple threads, if OPEN is defined
 	#ifdef OPEN
-	#pragma omp parallel for num_threads(omp_num_threads)
+#pragma omp parallel for /*num_threads(omp_num_threads)*/
 	#endif
 	// Scan from left to right, top to bottom, computing GICOV values
 	for (i = MaxR; i < width - MaxR; i++) {
@@ -187,7 +187,7 @@ MAT * dilate_f(MAT * img_in, MAT * strel) {
 	
 	// Split the work among multiple threads, if OPEN is defined
 	#ifdef OPEN
-	#pragma omp parallel for num_threads(omp_num_threads)
+#pragma omp parallel for /*num_threads(omp_num_threads)*/
 	#endif
 	// Iterate across the input matrix
 	for (i = 0; i < img_in->m; i++) {

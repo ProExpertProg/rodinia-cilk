@@ -8,8 +8,10 @@
  */
 
 #include <omp.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "backprop.h"
 #include <math.h>
 #define OPEN
@@ -89,7 +91,7 @@ int m, n;
 }
 
 
-bpnn_randomize_weights(w, m, n)
+void bpnn_randomize_weights(w, m, n)
 float **w;
 int m, n;
 {
@@ -103,7 +105,7 @@ int m, n;
   }
 }
 
-bpnn_randomize_row(w, m)
+void bpnn_randomize_row(w, m)
 float *w;
 int m;
 {
@@ -115,7 +117,7 @@ int m;
 }
 
 
-bpnn_zero_weights(w, m, n)
+void bpnn_zero_weights(w, m, n)
 float **w;
 int m, n;
 {
@@ -242,7 +244,7 @@ int n1, n2;
   /*** Set up thresholding unit ***/
   l1[0] = 1.0;
 #ifdef OPEN
-  omp_set_num_threads(NUM_THREAD);
+  /* omp_set_num_threads(NUM_THREAD); */
   #pragma omp parallel for shared(conn, n1, n2, l1) private(k, j) reduction(+: sum) schedule(static)
 #endif 
   /*** For each unit in second layer ***/
@@ -312,7 +314,7 @@ float *delta, *ly, **w, **oldw;
   //momentum = 0.3;
 
 #ifdef OPEN
-  omp_set_num_threads(NUM_THREAD);
+  /* omp_set_num_threads(NUM_THREAD); */
   #pragma omp parallel for  \
       shared(oldw, w, delta) \
 	  private(j, k, new_dw) \

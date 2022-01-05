@@ -1,6 +1,6 @@
 # C compiler
 CC = clang
-CC_FLAGS = -g -fopencilk  -O2
+CC_FLAGS = -g -fopencilk  -O2 $(EXTRA_CFLAGS)
 
 
 backprop: backprop.o facetrain.o imagenet.o backprop_kernel.o 

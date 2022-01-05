@@ -19,7 +19,7 @@ RANLIB = ranlib
 
 # CFLAGS = -O -g
 # CFLAGS = -pg -g
-CFLAGS = -O
+CFLAGS = -O $(EXTRA_CFLAGS)
 
 
 .c.o:
@@ -124,7 +124,6 @@ msdos-zip:
 	 `echo $(ALL_LISTS) | sed -e 's/\.o/.c/g'` \
 	$(HLIST)  $(OTHERS) `echo $(TORTURE) | sed -e 's/\.o/.c/g'` \
 	MACHINES DOC
-	
 
 fullshar:
 	- /bin/rm -f $(MES_PAK).shar;

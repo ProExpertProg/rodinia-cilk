@@ -15,8 +15,8 @@ CC = clang
 C_C = $(CC)
 # OMP_LIB = -lgomp
 # OMP_FLAG = -fopenmp
-CILK_LIB = -fopencilk
-CILK_FLAG = -fopencilk
+CILKFLAG = -fopencilk
+CILK_LIB = $(CILKFLAG) $(EXTRA_LDFLAGS)
 
 # link objects (binaries) together
 a.out:		main.o \
@@ -28,7 +28,7 @@ a.out:		main.o \
 			./util/num/num.o \
 			./util/timer/timer.o \
 			-lm \
-			$(CILK_LIB) $(EXTRA_CFLAGS) \
+			$(CILK_LIB) \
 			-o lavaMD
 # compile function files into objects (binaries)
 main.o:		main.h \
@@ -50,7 +50,7 @@ main.o:		main.h \
 						-c \
 						-o ./kernel/kernel_cpu.o \
 						-O3 \
-						$(CILK_FLAG) $(EXTRA_CFLAGS)
+						$(CILKFLAG) $(EXTRA_CFLAGS)
 
 ./util/num/num.o:	./util/num/num.h \
 					./util/num/num.c

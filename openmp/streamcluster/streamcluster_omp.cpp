@@ -1250,7 +1250,7 @@ int main(int argc, char **argv)
 	
 	ompthreads = nproc;
 	nproc = 1;
-	omp_set_num_threads(ompthreads);
+	// omp_set_num_threads(ompthreads);
 	
   srand48(SEED);
   PStream* stream;

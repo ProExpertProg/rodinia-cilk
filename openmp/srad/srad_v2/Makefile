@@ -1,9 +1,9 @@
 # C compiler
-CC = g++
+CXX = g++
 CC_FLAGS = -g -fopenmp -O2
 
-bfs: 
-	$(CC) $(CC_FLAGS) srad.cpp -o srad 
+srad:
+	$(CXX) $(CC_FLAGS) srad.cpp -o srad
 
 clean:
 	rm -f srad
