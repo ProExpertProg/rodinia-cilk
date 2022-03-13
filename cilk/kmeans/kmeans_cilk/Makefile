@@ -10,6 +10,9 @@ kmeans: cluster.o getopt.o kmeans.o kmeans_clustering.o
 kmeans_reducers: cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o
 	$(CC) $(CC_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o  -o kmeans_reducers
 
+kmeans_reducers_test: cluster.o getopt.o kmeans.o kmeans_clustering_reducers_test.o
+	$(CC) $(CC_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering_reducers_test.o  -o kmeans_reducers_test
+
 %.o: %.[ch]
 	$(CC) $(CC_FLAGS) $< -c
 
@@ -28,5 +31,8 @@ kmeans_clustering.o: kmeans_clustering.c kmeans.h
 kmeans_clustering_reducers.o: kmeans_clustering_reducers.c kmeans.h
 	$(CC) $(CC_FLAGS) kmeans_clustering_reducers.c -c
 
+kmeans_clustering_reducers_test.o: kmeans_clustering_reducers_test.c kmeans.h
+	$(CC) $(CC_FLAGS) kmeans_clustering_reducers_test.c -c
+
 clean:
-	rm -f *.o *~ kmeans kmeans_reducers
+	rm -f *.o *~ kmeans kmeans_reducers kmeans_reducers_test

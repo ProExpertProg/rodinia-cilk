@@ -72,31 +72,6 @@
 // TODO: Look into performing memory allocation of reducer views more
 // cleverly.
 
-// REDUCER_IMPL controls which reducer implementation to use.
-//
-// REDUCER_IMPL == 1 uses a single reducer whose view is a structure
-// that contains both an array of lengths and an array of data.  The
-// reducer methods handle both arrays simultaneously.  Only a single
-// reducer-view lookup is required in a stolen subcomputation to get
-// both arrays.
-//
-// REDUCER_IMPL == 2 uses separate reducer-arrays for lengths and for
-// data.  Separate reducer methods (identity, destroy, and reduce) are
-// implemented for the different reducer-arrays.
-//
-// REDUCER_IMPL == 3 or 4 is analogous to REDUCER_IMPL == 1 or 2,
-// respectively, but they use the new C syntax for reducers.
-#ifndef REDUCER_IMPL
-#define REDUCER_IMPL 3
-// MANUAL_REDUCER_OPTS enables by-hand optimization of reducer-view
-// lookups.  As of writing (20211224), the OpenCilk compiler is unable
-// to optimize the reducer-view lookups, because its alias analysis is
-// defeated by the fact that reducer views are arrays.
-#ifndef MANUAL_REDUCER_OPTS
-#define MANUAL_REDUCER_OPTS 1
-#endif // MANUAL_REDUCER_OPTS
-#endif // REDUCER_IMPL
-
 // Methods for float summation reducer
 void plusf(void *key, void *l, void *r) {
   *(float*)l += *(float*)r;
@@ -154,30 +129,22 @@ float euclid_dist_2(float *pt1,
 int global_nclusters = 0;
 int global_nfeatures = 0;
 
-#if REDUCER_IMPL == 1 || REDUCER_IMPL == 3
 // The type of the reducer view: a struct containing an array of
 // lengths and an array of data.
 typedef struct new_centers_rv {
   int *len;
-  /* float **data; */
   float *data;
 } new_centers_rv;
 
 void new_centers_identity(void *key, void *value) {
   new_centers_rv *new_centers = (new_centers_rv *)value;
   new_centers->len = (int*) calloc(global_nclusters, sizeof(int));
-  /* new_centers->data = (float**) malloc(global_nclusters * sizeof(float*)); */
-  /* new_centers->data[0] = (float*) calloc(global_nclusters * global_nfeatures, */
-  /* 					 sizeof(float)); */
-  /* for (int i = 1; i < global_nclusters; ++i) */
-  /*   new_centers->data[i] = new_centers->data[i-1] + global_nfeatures; */
   new_centers->data = (float*)calloc(global_nclusters * global_nfeatures,
 				     sizeof(float));
 }
 
 void new_centers_destroy(void *key, void *value) {
   new_centers_rv *new_centers = (new_centers_rv *)value;
-  /* free(new_centers->data[0]); */
   free(new_centers->data);
   free(new_centers->len);
 }
@@ -189,54 +156,11 @@ void new_centers_reduce(void *key, void *left, void *right) {
   for (int i = 0; i < global_nclusters; ++i) {
     left_view->len[i] += right_view->len[i];
     for (int j = 0; j < global_nfeatures; ++j) {
-      /* left_view->data[i][j] += right_view->data[i][j]; */
       left_view->data[i * global_nfeatures + j] +=
 	right_view->data[i * global_nfeatures + j];
     }
   }
 }
-
-typedef CILK_C_DECLARE_REDUCER(new_centers_rv) new_centers_r;
-
-#elif REDUCER_IMPL == 2 || REDUCER_IMPL == 4
-// Reducer methods for the length-array reducer.
-void new_centers_len_identity(void *key, void *value) {
-  *(int**)value = (int*) calloc(global_nclusters, sizeof(int));
-}
-
-void new_centers_len_destroy(void *key, void *value) {
-  free(*(int**)value);
-}
-
-void new_centers_len_reduce(void *key, void *left, void *right) {
-  int *left_view = *(int**)left;
-  int *right_view = *(int**)right;
-  for (int i = 0; i < global_nclusters; ++i)
-    left_view[i] += right_view[i];
-}
-
-typedef CILK_C_DECLARE_REDUCER(int*) new_centers_len_r;
-
-// Reducer methods for the data-array reducer.
-void new_centers_identity(void *key, void *value) {
-  *(float**)value = (float*) calloc(global_nclusters * global_nfeatures,
-				    sizeof(float));
-}
-
-void new_centers_destroy(void *key, void *value) {
-  free(*(float**)value);
-}
-
-void new_centers_reduce(void *key, void *left, void *right) {
-  float *left_view = *(float**)left;
-  float *right_view = *(float**)right;
-  for (int i = 0; i < global_nclusters; ++i)
-    for (int j = 0; j < global_nfeatures; ++j)
-      left_view[i * global_nfeatures + j] += right_view[i * global_nfeatures + j];
-}
-
-typedef CILK_C_DECLARE_REDUCER(float*) new_centers_r;
-#endif // REDUCER_IMPL
 
 /*----< kmeans_clustering() >---------------------------------------------*/
 float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
@@ -250,32 +174,13 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
   // int     *new_centers_len;                   /* [nclusters]: no. of points in each cluster */
   global_nclusters = nclusters;
   global_nfeatures = nfeatures;
-#if REDUCER_IMPL == 1
-  new_centers_r new_centers =
-    CILK_C_INIT_REDUCER(new_centers_rv, new_centers_reduce, new_centers_identity,
-			new_centers_destroy, (new_centers_rv){.len = NULL, .data = NULL});
-#elif REDUCER_IMPL == 2
-  new_centers_len_r new_centers_len =
-    CILK_C_INIT_REDUCER(int*, new_centers_len_reduce, new_centers_len_identity,
-			new_centers_len_destroy, NULL);
-  new_centers_r new_centers =
-    CILK_C_INIT_REDUCER(float*, new_centers_reduce, new_centers_identity,
-			new_centers_destroy, NULL);
-#elif REDUCER_IMPL == 3
+
   new_centers_rv new_centers __attribute__((hyperobject, reducer(new_centers_reduce, new_centers_identity, new_centers_destroy)));
-#elif REDUCER_IMPL == 4
-  int *new_centers_len __attribute__((hyperobject, reducer(new_centers_len_reduce, new_centers_len_identity, new_centers_len_destroy))) = NULL;
-  float *new_centers __attribute__((hyperobject, reducer(new_centers_reduce, new_centers_identity, new_centers_destroy))) = NULL;
-#endif
+
   /* float  **new_centers;                           /\* [nclusters][nfeatures] *\/ */
   float  **clusters;                                      /* out: [nclusters][nfeatures] */
   /* float    delta; */
-#if REDUCER_IMPL >= 3
   float delta __attribute__((hyperobject, reducer(plusf, zerof)));
-#else
-  CILK_C_REDUCER_OPADD(delta, float, 0.0);
-  CILK_C_REGISTER_REDUCER(delta);
-#endif
 
   double   timing;
 
@@ -311,33 +216,11 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
   /* for (int i=1; i<nclusters; i++) */
   /*   new_centers[i] = new_centers[i-1] + nfeatures; */
 
-#if REDUCER_IMPL == 1
-  CILK_C_REGISTER_REDUCER(new_centers);
-  REDUCER_VIEW(new_centers).len = (int*) calloc(nclusters, sizeof(int));
-  /* REDUCER_VIEW(new_centers).data = (float**) malloc(nclusters * sizeof(float*)); */
-  /* REDUCER_VIEW(new_centers).data[0] = (float*) calloc(nclusters * nfeatures, sizeof(float)); */
-  /* for (int i = 1; i < nclusters; ++i) */
-  /*   REDUCER_VIEW(new_centers).data[i] = REDUCER_VIEW(new_centers).data[i-1] + nfeatures; */
-  REDUCER_VIEW(new_centers).data = (float*) calloc(nclusters * nfeatures, sizeof(float));
-#elif REDUCER_IMPL == 2
-  CILK_C_REGISTER_REDUCER(new_centers_len);
-  REDUCER_VIEW(new_centers_len) = (int*) calloc(nclusters, sizeof(int));
-
-  CILK_C_REGISTER_REDUCER(new_centers);
-  REDUCER_VIEW(new_centers) = (float*) calloc(nclusters * nfeatures, sizeof(float));
-#elif REDUCER_IMPL == 3
   new_centers.len = (int*) calloc(nclusters, sizeof(int));
   new_centers.data = (float*) calloc(nclusters * nfeatures, sizeof(float));
-#elif REDUCER_IMPL == 4
-  new_centers_len = (int*) calloc(nclusters, sizeof(int));
-  new_centers = (float*) calloc(nclusters * nfeatures, sizeof(float));
-#endif
+
   do {
-#if REDUCER_IMPL >= 3
     delta = 0.0;
-#else
-    REDUCER_VIEW(delta) = 0.0;
-#endif
     /* omp_set_num_threads(num_omp_threads); */
     /* #pragma omp parallel \ */
     /* shared(feature,clusters,membership,partial_new_centers,partial_new_centers_len) */
@@ -349,133 +232,18 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 				     clusters,
 				     nclusters);                                
       /* if membership changes, increase delta by 1 */
-#if REDUCER_IMPL >= 3
       if (membership[i] != index) delta += 1.0;
-#else
-      if (membership[i] != index) REDUCER_VIEW(delta) += 1.0;
-#endif
 
       /* assign the membership to object i */
       membership[i] = index;
 
-#if REDUCER_IMPL == 1
-#if MANUAL_REDUCER_OPTS
-      new_centers_rv *my_new_centers = &REDUCER_VIEW(new_centers);
-      my_new_centers->len[index]++;
-#else // MANUAL_REDUCER_OPTS
-      REDUCER_VIEW(new_centers).len[index]++;
-#endif // MANUAL_REDUCER_OPTS
-      for (int j = 0; j < nfeatures; ++j)
-#if MANUAL_REDUCER_OPTS
-	/* my_new_centers->data[index][j] += feature[i][j]; */
-	my_new_centers->data[index * nfeatures + j] += feature[i][j];
-#else // MANUAL_REDUCER_OPTS
-	/* REDUCER_VIEW(new_centers).data[index][j] += feature[i][j]; */
-	REDUCER_VIEW(new_centers).data[index * nfeatures + j] += feature[i][j];
-#endif // MANUAL_REDUCER_OPTS
-
-#elif REDUCER_IMPL == 2
-      REDUCER_VIEW(new_centers_len)[index]++;
-      // TBS: Manually moving the hyper_lookup here improves running
-      // time by ~2.5x in my tests.
-#if MANUAL_REDUCER_OPTS
-      float *my_new_centers = REDUCER_VIEW(new_centers);
-      for (int j = 0; j < nfeatures; ++j)
-	my_new_centers[index * nfeatures + j] += feature[i][j];
-#else // MANUAL_REDUCER_OPTS
-      for (int j = 0; j < nfeatures; ++j)
-	REDUCER_VIEW(new_centers)[index * nfeatures + j] += feature[i][j];
-#endif // MANUAL_REDUCER_OPTS
-
-#elif REDUCER_IMPL == 3
-#if MANUAL_REDUCER_OPTS
-      new_centers_rv *my_new_centers = &new_centers;
-      my_new_centers->len[index]++;
-#else // MANUAL_REDUCER_OPTS
       new_centers.len[index]++;
-#endif // MANUAL_REDUCER_OPTS
       for (int j = 0; j < nfeatures; ++j)
-#if MANUAL_REDUCER_OPTS
-	my_new_centers->data[index * nfeatures + j] += feature[i][j];
-#else // MANUAL_REDUCER_OPTS
 	new_centers.data[index * nfeatures + j] += feature[i][j];
-#endif // MANUAL_REDUCER_OPTS
 
-#elif REDUCER_IMPL == 4
-      new_centers_len[index]++;
-#if MANUAL_REDUCER_OPTS
-      float *my_new_centers = new_centers;
-      for (int j = 0; j < nfeatures; ++j)
-	my_new_centers[index * nfeatures + j] += feature[i][j];
-#else // MANUAL_REDUCER_OPTS
-      for (int j = 0; j < nfeatures; ++j)
-	new_centers[index * nfeatures + j] += feature[i][j];
-#endif // MANUAL_REDUCER_OPTS
-#endif // REDUCER_IMPL
     }
 
     /* replace old cluster centers with new_centers */
-#if REDUCER_IMPL == 1
-#if MANUAL_REDUCER_OPTS
-    new_centers_rv *my_new_centers = &REDUCER_VIEW(new_centers);
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-        if (my_new_centers->len[i] > 0)
-          /* clusters[i][j] = REDUCER_VIEW(new_centers).data[i][j] / REDUCER_VIEW(new_centers).len[i]; */
-          clusters[i][j] = my_new_centers->data[i * nfeatures + j] / my_new_centers->len[i];
-        /* REDUCER_VIEW(new_centers).data[i][j] = 0.0;   /\* set back to 0 *\/ */
-        my_new_centers->data[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      my_new_centers->len[i] = 0;   /* set back to 0 */
-    }
-#else // MANUAL_REDUCER_OPTS
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-        if (REDUCER_VIEW(new_centers).len[i] > 0)
-          /* clusters[i][j] = REDUCER_VIEW(new_centers).data[i][j] / REDUCER_VIEW(new_centers).len[i]; */
-          clusters[i][j] = REDUCER_VIEW(new_centers).data[i * nfeatures + j] / REDUCER_VIEW(new_centers).len[i];
-        /* REDUCER_VIEW(new_centers).data[i][j] = 0.0;   /\* set back to 0 *\/ */
-        REDUCER_VIEW(new_centers).data[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      REDUCER_VIEW(new_centers).len[i] = 0;   /* set back to 0 */
-    }
-#endif // MANUAL_REDUCER_OPTS
-
-#elif REDUCER_IMPL == 2
-#if MANUAL_REDUCER_OPTS
-    int *my_new_centers_len = REDUCER_VIEW(new_centers_len);
-    float *my_new_centers = REDUCER_VIEW(new_centers);
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-	if (my_new_centers_len[i] > 0)
-	  clusters[i][j] = my_new_centers[i * nfeatures + j] / my_new_centers_len[i];
-        my_new_centers[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      my_new_centers_len[i] = 0;   /* set back to 0 */
-    }
-#else // MANUAL_REDUCER_OPTS
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-        if (REDUCER_VIEW(new_centers_len)[i] > 0)
-          clusters[i][j] = REDUCER_VIEW(new_centers)[i * nfeatures + j] / REDUCER_VIEW(new_centers_len)[i];
-        REDUCER_VIEW(new_centers)[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      REDUCER_VIEW(new_centers_len)[i] = 0;   /* set back to 0 */
-    }
-#endif // MANUAL_REDUCER_OPTS
-
-#elif REDUCER_IMPL == 3
-#if MANUAL_REDUCER_OPTS
-    new_centers_rv *my_new_centers = &new_centers;
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-        if (my_new_centers->len[i] > 0)
-          clusters[i][j] = my_new_centers->data[i * nfeatures + j] / my_new_centers->len[i];
-        my_new_centers->data[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      my_new_centers->len[i] = 0;   /* set back to 0 */
-    }
-#else // MANUAL_REDUCER_OPTS
     for (int i=0; i<nclusters; i++) {
       for (int j=0; j<nfeatures; j++) {
         if (new_centers.len[i] > 0)
@@ -484,58 +252,13 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
       }
       new_centers.len[i] = 0;   /* set back to 0 */
     }
-#endif // MANUAL_REDUCER_OPTS
-
-#elif REDUCER_IMPL == 4
-#if MANUAL_REDUCER_OPTS
-    int *my_new_centers_len = new_centers_len;
-    float *my_new_centers = new_centers;
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-	if (my_new_centers_len[i] > 0)
-	  clusters[i][j] = my_new_centers[i * nfeatures + j] / my_new_centers_len[i];
-        my_new_centers[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      my_new_centers_len[i] = 0;   /* set back to 0 */
-    }
-#else // MANUAL_REDUCER_OPTS
-    for (int i=0; i<nclusters; i++) {
-      for (int j=0; j<nfeatures; j++) {
-        if (new_centers_len[i] > 0)
-          clusters[i][j] = new_centers[i * nfeatures + j] / new_centers_len[i];
-        new_centers[i * nfeatures + j] = 0.0;   /* set back to 0 */
-      }
-      new_centers_len[i] = 0;   /* set back to 0 */
-    }
-#endif // MANUAL_REDUCER_OPTS
-#endif // REDUCER_IMPL
-#if REDUCER_IMPL >= 3
   } while (delta > threshold && loop++ < 500);
-#else
-  } while (REDUCER_VIEW(delta) > threshold && loop++ < 500);
-  CILK_C_UNREGISTER_REDUCER(delta);
-#endif
 
   /* free(new_centers[0]); */
   /* free(new_centers); */
   /* free(new_centers_len); */
-#if REDUCER_IMPL == 1
-  /* free(REDUCER_VIEW(new_centers).data[0]); */
-  free(REDUCER_VIEW(new_centers).data);
-  free(REDUCER_VIEW(new_centers).len);
-  CILK_C_UNREGISTER_REDUCER(new_centers);
-#elif REDUCER_IMPL == 2
-  free(REDUCER_VIEW(new_centers));
-  CILK_C_UNREGISTER_REDUCER(new_centers);
-  free(REDUCER_VIEW(new_centers_len));
-  CILK_C_UNREGISTER_REDUCER(new_centers_len);
-#elif REDUCER_IMPL == 3
   free(new_centers.data);
   free(new_centers.len);
-#elif REDUCER_IMPL == 4
-  free(new_centers);
-  free(new_centers_len);
-#endif
 
   return clusters;
 }
