@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 
+
 ## Functions to parse output of benchmarks, specifically, to get the
 ## running time.
 
@@ -21,6 +22,7 @@ def DefaultParseOutput(output):
             return m.group(1)
     logger.warning("No time output found")
     return str(0.0)
+
 
 # Output parser for lavaMD, sradv1
 def TimeNewLineParseOutput(output):
@@ -36,11 +38,13 @@ def TimeNewLineParseOutput(output):
     logger.warning("No time output found")
     return str(0.0)
 
+
 # lud benchmark outputs running time in milliseconds, rather than
 # seconds.
 def ludParseOutput(output):
     timeMS = DefaultParseOutput(output)
     return str(float(timeMS) / 1000.0)
+
 
 # particlefilter benchmark outputs running time in an unusual way
 def particlefilterParseOutput(output):
@@ -52,14 +56,19 @@ def particlefilterParseOutput(output):
     logger.warning("No time output found")
     return str(0.0)
 
+
 benchmarks = {
     # "b+tree": ["", "./b+tree.out core 2 file ../../data/b+tree/mil.txt command ../../data/b+tree/command.txt"],
     # "backprop": ["", "./backprop 1048576"],
-    "bfs": ("bfs", "./bfs 4 ../../data/bfs/graph1MW_6.txt", DefaultParseOutput),
+    # "bfs": ("bfs", "./bfs 4 ../../data/bfs/graph1MW_6.txt", DefaultParseOutput),
     "cfd": ("cfd", "./euler3d_cpu ../../data/cfd/fvcorr.domn.193K", DefaultParseOutput),
     # "heartwall": ["heartwall", "./heartwall ../../data/heartwall/test.avi 20 4"],
-    "hotspot": ("hotspot", "./hotspot 8192 8192 2 4 ../../data/hotspot/temp_8192 ../../data/hotspot/power_8192 output.out", DefaultParseOutput),
-    "hotspot3D": ("hotspot3D", "./3D 512 8 100 ../../data/hotspot3D/power_512x8 ../../data/hotspot3D/temp_512x8 output.out", DefaultParseOutput),
+    "hotspot": (
+    "hotspot", "./hotspot 8192 8192 2 4 ../../data/hotspot/temp_8192 ../../data/hotspot/power_8192 output.out",
+    DefaultParseOutput),
+    "hotspot3D": (
+    "hotspot3D", "./3D 512 8 100 ../../data/hotspot3D/power_512x8 ../../data/hotspot3D/temp_512x8 output.out",
+    DefaultParseOutput),
     "kmeans": ("kmeans/kmeans_cilk", "./kmeans -n 1024 -i ../../../data/kmeans/kdd_cup", DefaultParseOutput),
     "lavaMD": ("lavaMD", "./lavaMD -cores 4 -boxes1d 10", TimeNewLineParseOutput),
     "leukocyte": ("leukocyte/Cilk", "./leukocyte 5 4 ../../../data/leukocyte/testfile.avi", DefaultParseOutput),
@@ -74,57 +83,59 @@ benchmarks = {
 }
 
 parallelSystems = {
-    "opencilk" : { "build": ["cilk", "CILKFLAG=\"-fopencilk\"", "", "", "CILK_NWORKERS"],
-                   "benchparams" : {
-                       "kmeans": { "dir": "kmeans/kmeans_cilk" },
-                       "leukocyte": { "dir": "leukocyte/Cilk" },
-                       "lud": { "dir": "lud/cilk", "runcmd" : "./lud_cilk -s 8000" }
-                       }
-                   },
-    "cilkplus" : { "build": ["cilk", "CILKFLAG=\"-fcilkplus\"", "",
-                             "EXTRA_LDFLAGS=\"-L/data/compilers/cilkrts/build -Wl,-rpath,/data/compilers/cilkrts/build\"",
-                             "CILK_NWORKERS"],
-                   "benchparams" : {
-                       "kmeans": { "dir": "kmeans/kmeans_cilk" },
-                       "leukocyte": { "dir": "leukocyte/Cilk" },
-                       "lud": { "dir": "lud/cilk", "runcmd" : "./lud_cilk -s 8000" }
-                       }
-                   },
-    "openmp" : { "build" : ["openmp", "", "", "", "OMP_NUM_THREADS"],
-                 "benchparams" : {
-                       "kmeans": { "dir": "kmeans/kmeans_openmp" },
-                       "leukocyte": { "dir": "leukocyte/OpenMP" },
-                       "lud": { "dir": "lud/omp", "runcmd" : "./lud_omp -s 8000" },
-                       "streamcluster": { "runcmd" : "./sc_omp 10 20 256 65536 65536 1000 none output.txt 4"}
-                       }
-                   }
+    "opencilk": {"build": ["cilk", "CILKFLAG=\"-fopencilk\"", "", "", "CILK_NWORKERS"],
+                 "benchparams": {
+                     "kmeans": {"dir": "kmeans/kmeans_cilk"},
+                     "leukocyte": {"dir": "leukocyte/Cilk"},
+                     "lud": {"dir": "lud/cilk", "runcmd": "./lud_cilk -s 8000"}
+                 }
+                 },
+    "cilkplus": {"build": ["cilk", "CILKFLAG=\"-fcilkplus\"", "",
+                           "EXTRA_LDFLAGS=\"-L/data/compilers/cilkrts/build -Wl,-rpath,/data/compilers/cilkrts/build\"",
+                           "CILK_NWORKERS"],
+                 "benchparams": {
+                     "kmeans": {"dir": "kmeans/kmeans_cilk"},
+                     "leukocyte": {"dir": "leukocyte/Cilk"},
+                     "lud": {"dir": "lud/cilk", "runcmd": "./lud_cilk -s 8000"}
+                 }
+                 },
+    "openmp": {"build": ["openmp", "", "", "", "OMP_NUM_THREADS"],
+               "benchparams": {
+                   "kmeans": {"dir": "kmeans/kmeans_openmp"},
+                   "leukocyte": {"dir": "leukocyte/OpenMP"},
+                   "lud": {"dir": "lud/omp", "runcmd": "./lud_omp -s 8000"},
+                   "streamcluster": {"runcmd": "./sc_omp 10 20 256 65536 65536 1000 none output.txt 4"}
+               }
+               }
 }
 
-defaultWorkerCounts = [1,2,4,8,12,16,24,32,40,48]
+defaultWorkerCounts = [1, 2, 4, 8, 12, 16, 24, 32, 40, 48]
 defaultNumTrials = 5
-
-compilerBinDir = "/data/animals/opencilk/install/bin/"
 
 logger = logging.getLogger(__name__)
 
-def compileTest(systemFlag, extraCFlags, extraLDFlags):
-    subProcCommand = "make clean; make CC=" + compilerBinDir + "clang CXX=" + compilerBinDir + "clang++" + " " + systemFlag + " " + extraCFlags + " " + extraLDFlags
+
+# returns True on success
+def compileTest(systemFlag, extraCFlags, extraLDFlags, compilerBinDir):
+    subProcCommand = "make clean && make CC=" + compilerBinDir + "/clang CXX=" + compilerBinDir + "/clang++" + " " + systemFlag + " " + extraCFlags + " " + extraLDFlags
     logger.info(subProcCommand)
     proc = subprocess.Popen([subProcCommand], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out,err = proc.communicate()
+    out, err = proc.communicate()
     # Log the output to stdout and stderr from running the command.
     logger.info("STDOUT:\n" + str(out, "utf-8"))
     logger.info("STDERR:\n" + str(err, "utf-8"))
+    return proc.returncode == 0
+
 
 def runTest(workerCountEnvVar, command, workerCounts, numTrials, parseOutputFn):
     results = []
     for P in workerCounts:
-        subProcCommand = [workerCountEnvVar + '=' + str(P) + ' taskset -c 0-' + str(P-1) + ' ' + command]
+        subProcCommand = [workerCountEnvVar + '=' + str(P) + ' taskset -c 0-' + str(P - 1) + ' ' + command]
         logger.info(subProcCommand)
         trials = [str(P)]
-        for t in range(0,numTrials):
+        for t in range(0, numTrials):
             proc = subprocess.Popen(subProcCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out,err = proc.communicate()
+            out, err = proc.communicate()
             # Log the output to stdout and stderr from running the command.
             logger.info("STDOUT:\n" + str(out, "utf-8"))
             logger.info("STDERR:\n" + str(err, "utf-8"))
@@ -132,8 +143,9 @@ def runTest(workerCountEnvVar, command, workerCounts, numTrials, parseOutputFn):
         results.append(trials)
     return results
 
-def buildAndRun(csvWriter, benchmarkList, systemList, workerCounts, numTrials):
-    basedir = os.path.dirname(__file__)
+
+def buildAndRun(csvWriter, benchmarkList, systemList, workerCounts, numTrials, compilerBinDir):
+    basedir = os.path.abspath(os.path.dirname(__file__))
 
     # Iterate over listed benchmarks
     for bench in benchmarkList:
@@ -159,22 +171,34 @@ def buildAndRun(csvWriter, benchmarkList, systemList, workerCounts, numTrials):
             else:
                 subdir = benchmarks[bench][0]
                 runcmd = benchmarks[bench][1]
-            os.chdir(os.path.join(os.path.join(basedir, sysdir), subdir))
+            new_workdir = os.path.join(os.path.join(basedir, sysdir), subdir)
+            try:
+                os.chdir(new_workdir)
+            except FileNotFoundError:
+                logger.error(
+                    "couldn't cd to %s (basedir: %s, sysdir: %s, subdir: %s)" % (new_workdir, basedir, sysdir, subdir))
+                continue
+
             logger.info("TEST: " + bench + ", " + system)
             # Compile the test
-            compileTest(sysbuild[1], sysbuild[2], sysbuild[3])
+            compiled = compileTest(sysbuild[1], sysbuild[2], sysbuild[3], compilerBinDir)
             # Run the test and parse the output
-            results = runTest(sysbuild[4], runcmd, workerCounts, numTrials, benchmarks[bench][2])
-            # Log the result in CSV form
-            for trials in results:
-                csvWriter.writerow([bench, system] + trials)
+            if not compiled:
+                logger.error("Compilation failed!")
+            else:
+                results = runTest(sysbuild[4], runcmd, workerCounts, numTrials, benchmarks[bench][2])
+                # Log the result in CSV form
+                for trials in results:
+                    csvWriter.writerow([bench, system] + trials)
+
 
 # Log the status of turboboost
 def logTurboboostStatus():
     subProcCommand = "cat /sys/devices/system/cpu/intel_pstate/no_turbo"
     proc = subprocess.Popen([subProcCommand], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out,err = proc.communicate()
+    out, err = proc.communicate()
     logger.info(subProcCommand + ":" + str(out, "utf-8"))
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -183,6 +207,7 @@ def main():
     ap.add_argument("--output", "-o", help="tag for output filename, or '-' to dump to stdout")
     ap.add_argument("--trials", "-x", help="number of trials to run for each test")
     ap.add_argument("--workers", "-w", help="comma-separated list of worker counts to test")
+    ap.add_argument("--compiler", "-c", help="compiler binary dir path", required=True)
 
     args = ap.parse_args()
     print(args)
@@ -230,14 +255,17 @@ def main():
     else:
         workerCounts = list(map(int, args.workers.split(",")))
 
+    compilerBinDir = args.compiler
+
     logTurboboostStatus()
     if csvOutput is None:
-        buildAndRun(csv.writer(sys.stdout), benchmarkList, systemList, workerCounts, numTrials)
+        buildAndRun(csv.writer(sys.stdout), benchmarkList, systemList, workerCounts, numTrials, compilerBinDir)
     else:
         with open(csvOutput, 'w', newline='') as csvFile:
-            buildAndRun(csv.writer(csvFile), benchmarkList, systemList, workerCounts, numTrials)
+            buildAndRun(csv.writer(csvFile), benchmarkList, systemList, workerCounts, numTrials, compilerBinDir)
 
     logger.info("All tests complete.")
+
 
 if __name__ == '__main__':
     main()
