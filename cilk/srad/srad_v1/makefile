@@ -9,11 +9,11 @@
 
 CC = clang
 CFLAGS = -O3 -fopencilk $(EXTRA_CFLAGS)
+LD_FLAGS = -lm -fopencilk $(EXTRA_LDFLAGS)
 
 # link objects(binaries) together
 a.out:	main.o
-	$(CC)	main.o \
-			-lm $(CFLAGS) -o srad
+	$(CC)   main.o $(LD_FLAGS) -o srad
 
 # compile main function file into object (binary)
 main.o: 	main.c \
@@ -24,4 +24,4 @@ main.o: 	main.c \
 
 # delete all object files
 clean:
-	rm *.o srad
+	rm -f *.o srad

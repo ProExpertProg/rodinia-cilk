@@ -1,8 +1,8 @@
 all: Cilk/leukocyte
 
 Cilk/leukocyte:
-	cd Cilk; make
+	make -C Cilk
 
 clean:
-	cd Cilk; make clean
+	make -C Cilk clean
 	rm -f meschach_lib/meschach.a

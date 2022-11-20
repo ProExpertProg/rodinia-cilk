@@ -1,12 +1,16 @@
-all: OPENMP/kmeans SERIAL/kmeans
+all: OPENMP/kmeans SERIAL/kmeans CILK/kmeans
 
 OPENMP/kmeans:
-	cd kmeans_openmp; make
+	make -C kmeans_openmp
 	
 SERIAL/kmeans:
-	cd kmeans_serial; make
+	make -C kmeans_openmp
+
+CILK/kmeans:
+	make -C kmeans_cilk
 
 clean:
-	cd kmeans_serial; make clean
-	cd kmeans_openmp; make clean
-	
+	make -C kmeans_serial clean
+	make -C kmeans_openmp clean
+	make -C kmeans_cilk clean
+

@@ -1,9 +1,11 @@
 #makefile
 CC = clang
 CFLAGS = -O3 -ffast-math -fopencilk $(EXTRA_CFLAGS)
+LD_FLAGS = -fopencilk $(EXTRA_LDFLAGS)
+
 
 cilk: ex_particle_Cilk_seq.c
-	$(CC) $(CFLAGS) ex_particle_Cilk_seq.c -o particle_filter -lm 
+	$(CC) $(CFLAGS) $(LD_FLAGS) ex_particle_Cilk_seq.c -o particle_filter -lm
 
 
 # icc_openmp: ex_particle_Cilk_seq.c
@@ -11,4 +13,4 @@ cilk: ex_particle_Cilk_seq.c
 
 
 clean:
-	rm particle_filter
+	rm -f particle_filter

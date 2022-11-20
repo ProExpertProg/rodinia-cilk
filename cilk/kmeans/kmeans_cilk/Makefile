@@ -3,12 +3,13 @@
 # CC_FLAGS = -g -fopenmp -O2 
 CC = clang
 CC_FLAGS = -g -fopencilk -O2 $(EXTRA_CFLAGS)
+LD_FLAGS = -fopencilk $(EXTRA_LDFLAGS)
 
 kmeans: cluster.o getopt.o kmeans.o kmeans_clustering.o
-	$(CC) $(CC_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering.o  -o kmeans
+	$(CC) $(LD_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering.o  -o kmeans
 
 kmeans_reducers: cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o
-	$(CC) $(CC_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o  -o kmeans_reducers
+	$(CC) $(LD_FLAGS) cluster.o getopt.o kmeans.o kmeans_clustering_reducers.o  -o kmeans_reducers
 
 %.o: %.[ch]
 	$(CC) $(CC_FLAGS) $< -c
